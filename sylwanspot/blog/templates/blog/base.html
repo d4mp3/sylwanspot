@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock title %}</title>
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+      {% block content %}
+      {% endblock content %}
+    </div>
+    <div id="sidebar">
+      <h2>SylwanBlog</h2>
+      <p>Cyfrowa ścieżka w sam środek lasu.</p>
+    </div>
+</body>
+</html>

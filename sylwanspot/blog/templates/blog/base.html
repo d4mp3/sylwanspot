@@ -1,11 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
-<head>
-    <title>{% block title %}{% endblock title %}</title>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="description"
+          content="{% block meta_description %}Cyfrowa ścieżka w sam środek lasu.{% endblock meta_description %}">
+    <meta name="keywords"
+          content="{% block meta_keywords %}las, natura, przyroda, edukacja, gis{% endblock meta_keywords %}">
+    <title>
+      {% block title %}
+      {% endblock title %}
+    </title>
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
-</head>
-<body>
+  </head>
+  <body>
     <div id="content">
       {% block content %}
       {% endblock content %}
@@ -14,5 +22,5 @@
       <h2>SylwanBlog</h2>
       <p>Cyfrowa ścieżka w sam środek lasu.</p>
     </div>
-</body>
+  </body>
 </html>

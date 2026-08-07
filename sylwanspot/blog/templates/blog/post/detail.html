@@ -2,24 +2,33 @@
 {% block title %}{{ post.title }}{% endblock title %}
 {% block content %}
     <h1>{{ post.title }}</h1>
-    <p class="date">Published {{ post.publish }} by {{ post.author }}</p>
+    <p class="date">{{ post.publish|date:"d.m.Y, H:i" }} {{ post.author }}</p>
     {{ post.body|linebreaks }}
     <p>
-        <a href="{% url "blog:post_share" post.id %}">Share This post</a>
+        <a href="{% url "blog:post_share" post.id %}">Podziel się tym postem</a>
     </p>
     {% with comments.count as total_comments %}
-        <h2>{{ total_comments }} comment{{ total_comments|pluralize }}</h2>
+        <h2>
+            {{ total_comments }}
+            {% if total_comments == 1 %}
+                komentarz
+            {% elif total_comments == 2 or total_comments == 3 or total_comments == 4 %}
+                komentarze
+            {% else %}
+                komentarzy
+            {% endif %}
+        </h2>
     {% endwith %}
     {% for comment in comments %}
         <div class="comment">
             <p class="info">
-                Comment {{ forloop.counter }} by {{ comment.name }}
-                {{ comment.created }}
+                {{ comment.name }}
+                {{ comment.created|date:"d.m.Y, H:i" }}
             </p>
             {{ comment.body|linebreaks }}
         </div>
     {% empty %}
-        <p>There are no comments.</p>
+        <p>Brak komentarzy</p>
     {% endfor %}
     {% include "blog/post/includes/comment_form.html" %}
 {% endblock content %}

@@ -1,12 +1,13 @@
 from django import forms
+
 from .models import Comment
 
 
 class EmailPostForm(forms.Form):
-    name = forms.CharField(max_length=25)
-    email = forms.EmailField()
-    to = forms.EmailField()
-    comments = forms.CharField(required=False, widget=forms.Textarea)
+    name = forms.CharField(max_length=25, label="nadawca")
+    email = forms.EmailField(label="twój email")
+    to = forms.EmailField(label="email odbiorcy")
+    comments = forms.CharField(required=False, widget=forms.Textarea, label="treść")
 
 
 class CommentForm(forms.ModelForm):
@@ -14,7 +15,7 @@ class CommentForm(forms.ModelForm):
         model = Comment
         fields = ["name", "email", "body"]
         labels = {
-            'name': 'Nickname',
-            'email': 'Adres e-mail',
-            'body': 'Treść komentarza',
+            "name": "nickname",
+            "email": "e-mail",
+            "body": "treść komentarza",
         }

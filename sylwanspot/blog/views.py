@@ -1,5 +1,6 @@
 from django.core.mail import send_mail
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
@@ -18,7 +19,17 @@ def post_detail(request, year, month, day, post):
     comments = post.comments.filter(active=True)
     # Form for users to comment
     form = CommentForm()
-    return render(request, "blog/post/detail.html", {"post": post, "comments": comments, "form": form})
+
+    # List of similar posts
+    post_tags_ids = post.tags.values_list("id", flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count("tags")).order_by("-same_tags", "-publish")[:4]
+
+    return render(
+        request,
+        "blog/post/detail.html",
+        {"post": post, "comments": comments, "form": form, "similar_posts": similar_posts},
+    )
 
 
 # def post_list(request, tag_slug=None):
@@ -75,8 +86,11 @@ def post_share(request, post_id):
         if form.is_valid():
             cd = form.cleaned_data
             post_url = request.build_absolute_uri(post.get_absolute_url())
-            subject = f"{cd['name']} ({cd['email']}) recommends you read  {post.title}"
-            message = f"Read {post.title} at {post_url}\n\n{cd['name']}'s comments: ({cd['comments']})"
+            subject = f"{cd['name']} ({cd['email']}) poleca {post.title}"
+            message = (
+                f"Przeczytaj {post.title} pod adresem {post_url}\n\n"
+                f"Wiadomośc od {cd['name']}:\n{cd['comments']})"
+            )
             send_mail(subject=subject, message=message, from_email=None, recipient_list=[cd["to"]])
             sent = True
     else:

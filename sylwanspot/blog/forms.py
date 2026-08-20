@@ -19,3 +19,7 @@ class CommentForm(forms.ModelForm):
             "email": "e-mail",
             "body": "treść komentarza",
         }
+
+
+class SearchForm(forms.Form):
+    query = forms.CharField(label="Szukana fraza:")

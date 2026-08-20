@@ -1,3 +1,4 @@
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.mail import send_mail
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count
@@ -6,13 +7,18 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from taggit.models import Tag
 
-from .forms import CommentForm, EmailPostForm
+from .forms import CommentForm, EmailPostForm, SearchForm
 from .models import Post
 
 
 def post_detail(request, year, month, day, post):
     post = get_object_or_404(
-        Post, status=Post.Status.PUBLISHED, slug=post, publish__year=year, publish__month=month, publish__day=day
+        Post,
+        status=Post.Status.PUBLISHED,
+        slug=post,
+        publish__year=year,
+        publish__month=month,
+        publish__day=day,
     )
 
     # List of active comments for this post
@@ -28,7 +34,12 @@ def post_detail(request, year, month, day, post):
     return render(
         request,
         "blog/post/detail.html",
-        {"post": post, "comments": comments, "form": form, "similar_posts": similar_posts},
+        {
+            "post": post,
+            "comments": comments,
+            "form": form,
+            "similar_posts": similar_posts,
+        },
     )
 
 
@@ -87,11 +98,13 @@ def post_share(request, post_id):
             cd = form.cleaned_data
             post_url = request.build_absolute_uri(post.get_absolute_url())
             subject = f"{cd['name']} ({cd['email']}) poleca {post.title}"
-            message = (
-                f"Przeczytaj {post.title} pod adresem {post_url}\n\n"
-                f"Wiadomośc od {cd['name']}:\n{cd['comments']})"
+            message = f"Przeczytaj {post.title} pod adresem {post_url}\n\nWiadomośc od {cd['name']}:\n{cd['comments']})"
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=None,
+                recipient_list=[cd["to"]],
             )
-            send_mail(subject=subject, message=message, from_email=None, recipient_list=[cd["to"]])
             sent = True
     else:
         form = EmailPostForm()
@@ -103,13 +116,42 @@ def post_share(request, post_id):
 def post_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
     comment = None
-    # A comment was posted
     form = CommentForm(data=request.POST)
     if form.is_valid():
-        # Create a Comment object without saving it to the database
         comment = form.save(commit=False)
-        # Assign the post to the comment
         comment.post = post
-        # Save the comment to the database
         comment.save()
-        return render(request, "blog/post/comment.html", {"post": post, "form": form, "comment": comment})
+        return render(
+            request,
+            "blog/post/comment.html",
+            {"post": post, "form": form, "comment": comment},
+        )
+
+
+def post_search(request):
+    form = SearchForm()
+    query = None
+    results = []
+
+    if "query" in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data["query"]
+            search_vector = SearchVector("title", weight="A", config="polish") + SearchVector(
+                "body", weight="B", config="polish"
+            )
+            search_query = SearchQuery(query, config="polish")
+            results = (
+                Post.published.annotate(
+                    search=search_vector,
+                    rank=SearchRank(search_vector, search_query),
+                )
+                .filter(rank__gte=0.3)
+                .order_by("-rank")
+            )
+
+    return render(
+        request,
+        "blog/post/search.html",
+        {"form": form, "query": query, "results": results},
+    )

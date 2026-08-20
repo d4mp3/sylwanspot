@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.sitemaps",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "taggit",
     "blog.apps.BlogConfig",
 ]
@@ -81,10 +82,11 @@ WSGI_APPLICATION = "sylwanspot.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST"),
+        "NAME": config("POSTGRES_DB"),
+        "USER": config("POSTGRES_USER"),
+        "PASSWORD": config("POSTGRES_PASSWORD"),
+        "HOST": config("POSTGRES_HOST"),
+        "PORT": config("POSTGRES_PORT"),
     }
 }
 

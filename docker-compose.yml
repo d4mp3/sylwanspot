@@ -13,6 +13,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   web:
     build: ./
@@ -20,7 +22,7 @@ services:
       - .:/code
     environment:
       EMAIL_HOST_USER: 'damian.pszczola@gmail.com'
-      EMAIL_HOST_PASSWORD: 'xxxxxxxxxxxx'
+      EMAIL_HOST_PASSWORD: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
       DEFAULT_FROM_EMAIL: 'SylwanBlog <damian.pszczola@gmail.com>'
       PYTHONPATH: "/code/sylwanspot"
       DJANGO_SETTINGS_MODULE: "sylwanspot.settings"
@@ -29,6 +31,8 @@ services:
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_HOST: "db"
       POSTGRES_PORT: "5432"
+    networks:
+      - backend
 
   web_migrate:
     extends:
@@ -49,3 +53,10 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./:/code
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge

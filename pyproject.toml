@@ -71,6 +71,24 @@ ignore = ["RUF012"]
 # chars on its own, and no reformatting of the surrounding dict shortens it.
 "src/sylwanspot/settings.py" = ["E501"]
 
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "src"
+files = ["src", "manage.py"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Django-generated (or, for 0005, hand-written SQL) migrations are off limits
+# to hand-editing per this project's migration constraints, so they are not
+# type-checked -- annotating them would mean editing files this task must
+# not touch.
+module = "blog.migrations.*"
+ignore_errors = true
+
+[tool.django-stubs]
+django_settings_module = "sylwanspot.settings_typecheck"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

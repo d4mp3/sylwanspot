@@ -64,6 +64,11 @@ format() {
     exec -w /code web_run ruff format "$@"
 }
 
+typecheck() {
+    _requires web_run
+    exec -w /code web_run mypy "$@"
+}
+
 test() {
     _requires web_run
     exec -w /code web_run python -m pytest "$@"
@@ -112,6 +117,10 @@ Usage:
     ${BOLD}format${NORMAL} [<arg>]
 
         Reformat the codebase with ruff format.
+
+    ${BOLD}typecheck${NORMAL} [<arg>]
+
+        Run mypy over the codebase.
 
     ${BOLD}test${NORMAL} [<arg>]
 

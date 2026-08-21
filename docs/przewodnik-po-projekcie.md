@@ -23,6 +23,7 @@ Ten plik zaczyna się od zera i nie zakłada znajomości Django.
 * [Etap 5 — formularze i POST](#etap-5)
 * [Etap 6 — poza HTML](#etap-6)
 * [Etap 7 — wyszukiwanie](#etap-7)
+* [Etap 8 — testy](#etap-8)
 * [Co zauważysz po drodze](#co-zauwazysz)
 * [Ćwiczenia sprawdzające](#cwiczenia)
 
@@ -60,7 +61,7 @@ sylwanspot/                  <- katalog repozytorium (tu jest docker-compose.yml
         ├── signals.py       utrzymanie search_vector
         ├── feeds.py         kanał RSS
         ├── sitemaps.py      sitemap.xml
-        ├── tests.py
+        ├── tests/          pakiet testów, plik na moduł źródłowy
         ├── migrations/      0001–0006
         ├── templatetags/
         │   └── blog_tags.py własne tagi i filtry szablonów
@@ -99,6 +100,11 @@ wykonają, a te nie wystartują, dopóki healthcheck bazy nie przejdzie.
 ```bash
 docker compose up            # albo: ./do.sh start
 ```
+
+Testy uruchamiasz przez `./do.sh test` (pod spodem `pytest` w kontenerze
+`web_run`). **`manage.py test` nie zadziała** — testy są napisane pod pytesta,
+więc unittestowy discovery Django znajdzie zero przypadków i wypisze
+`NO TESTS RAN` zamiast błędu. Szczegóły: [Etap 8](#etap-8).
 
 Dwie rzeczy warte odnotowania w `docker-compose.yml`: `PYTHONPATH=/code/sylwanspot`
 sprawia, że pakiet `sylwanspot` i `blog` są importowalne, a wolumen `.:/code`
@@ -488,6 +494,93 @@ Uzasadnienia decyzji, pomiary i znane ograniczenia:
 
 ---
 
+<a id="etap-8"></a>
+## Etap 8 — testy
+
+**Czytaj:** `sylwanspot/pytest.ini` → `blog/tests/conftest.py` → dowolny
+`blog/tests/test_*.py`
+
+```bash
+./do.sh test                                        # całość
+./do.sh test blog/tests/test_search.py              # jeden plik
+./do.sh test blog/tests/test_search.py -k fuzzy     # jedna grupa przypadków
+./do.sh test --create-db                            # po EDYCJI istniejącej migracji
+```
+
+### 8.1 Dlaczego pytest, a nie `manage.py test`
+
+Runner Django wymaga klas dziedziczących po `TestCase`; pytest przyjmuje zwykłe
+funkcje i daje dwie rzeczy, które przy rosnącej liczbie testów robią różnicę:
+`@pytest.mark.parametrize` zamiast pętli z `subTest` (każdy przypadek to
+osobna, nazwana pozycja w raporcie) oraz fixture'y wstrzykiwane po nazwie
+zamiast dziedziczonych metod pomocniczych.
+
+Konsekwencja: **`manage.py test` nie znajdzie tych testów.** Wypisze
+`Found 0 test(s)` i `NO TESTS RAN` — nie błąd, więc łatwo tego nie zauważyć.
+Jedyną obsługiwaną komendą jest `./do.sh test`.
+
+`pytest.ini` leży obok `manage.py`, bo to katalog, z którego pakiet `blog` jest
+importowalny. Ustawia `DJANGO_SETTINGS_MODULE` i `--reuse-db`.
+
+`--reuse-db` znaczy „nie kasuj bazy testowej po przebiegu". Django i tak puszcza
+na niej `migrate`, więc **nowe migracje są podchwytywane normalnie** — oszczędza
+się na tym, że migracja 0005 (budowa słownika hunspell) nie wykonuje się od nowa
+za każdym razem. Realna różnica na tym projekcie: ~1.9 s wobec ~0.9 s.
+
+Kiedy trzeba `--create-db`: gdy zmienisz **migrację już zapisaną jako
+zastosowana**. `migrate` porównuje nazwy z tabelą `django_migrations` i pomija
+te, które tam są — nie zagląda w ich treść. Baza zostaje ze starym schematem.
+Ta sama pułapka dotyczy usunięcia, przenumerowania i zsquashowania migracji.
+
+Objaw jest jednoznaczny — nagle sypie się kilkanaście niepowiązanych testów:
+
+```
+psycopg.errors.UndefinedColumn: column "lead" of relation "blog_post" does not exist
+```
+
+Na tym projekcie najbardziej realny scenariusz to poprawka w SQL-u migracji
+0005: dopisujesz słownik do konfiguracji `polish`, testy przy `--reuse-db`
+nadal chodzą po starej konfiguracji i **przechodzą** — co jest groźniejsze niż
+błąd, bo wygląda jak sukces.
+
+### 8.2 Podział na pliki
+
+Jeden plik na moduł źródłowy — dzięki temu odpowiedź na pytanie „gdzie dopisać
+test do `search.py`" jest mechaniczna, a nie uznaniowa.
+
+| plik | co pokrywa |
+| --- | --- |
+| `test_postgres_setup.py` | konfiguracja `polish`, hunspell, stop-słowa, `pg_trgm` |
+| `test_search.py` | `search_posts()` — co znajduje, w jakiej kolejności, ile zapytań kosztuje |
+| `test_search_indexing.py` | `signals.py` + `rebuild_search_vectors` — co ląduje w `search_vector` |
+| `test_views.py` | wyrenderowany HTML: widok wyszukiwania i licznik komentarzy |
+| `test_templatetags.py` | `pluralize_pl` — czysta funkcja, bez bazy |
+
+Dwa pliki pomocnicze:
+
+* **`conftest.py`** — fixture'y współdzielone: `author` i fabryka `make_post`.
+  Pytest wstrzykuje je po nazwie argumentu, bez importu. Trafia tu wyłącznie
+  to, czego używa więcej niż jeden moduł; pomocnik jednego modułu zostaje
+  w tym module (patrz `vector_of` w `test_search_indexing.py`).
+* **`assertions.py`** — pytest-django nie eksportuje asercji Django, a
+  `assertContains(..., html=True)` porównuje HTML semantycznie, nie bajt po
+  bajcie. Cztery linie, które podpinają je jako zwykłe funkcje.
+
+Rozdzielenie `test_postgres_setup.py` od reszty jest celowe: te testy nie
+sprawdzają Twojego kodu, tylko środowisko. Gdy kontener `db` wstanie ze starego
+obrazu, mają krzyknąć one — zamiast kilkunastu testów wyszukiwania
+z niezrozumiałym komunikatem.
+
+### 8.3 Kiedy dzielić dalej
+
+Gdy plik przekroczy ~300–400 linii albo pojawi się w nim druga wyraźna oś
+tematyczna. Najbliższy kandydat to `test_views.py`: przy testach `post_share`
+(wysyłka maila), `post_comment` i paginacji stanie się pakietem
+`tests/views/` z plikiem na widok. Nie wcześniej — pusty plik założony
+„na zapas" to tylko jedno miejsce więcej do sprawdzenia.
+
+---
+
 <a id="co-zauwazysz"></a>
 ## Co zauważysz po drodze
 
@@ -513,7 +606,7 @@ czy czegoś nie rozumiesz.
 * Zakomentowana funkcja `post_list` w `views.py` — zostawiona, świetna do nauki
   (etap 3.2).
 * Klasa `Postadmin` (małe „a") obok `CommentAdmin`. Kosmetyka.
-* Pusty katalog `test/` w korzeniu repo. Testy są w `blog/tests.py`.
+* Pusty katalog `test/` w korzeniu repo. Testy są w `blog/tests/`.
 * Brak `CLAUDE.md`. Jeśli będziesz często wracał do tego repo z Claude Code,
   warto go dodać przez `/init`.
 

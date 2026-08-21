@@ -36,27 +36,27 @@ stop() {
 
 shell() {
     _requires web_run
-    exec -w /code/sylwanspot web_run /bin/bash
+    exec -w /code web_run /bin/bash
 }
 
 migrate() {
     _requires web_run
-    exec -w /code/sylwanspot web_run ./manage.py migrate "$@"
+    exec -w /code web_run python manage.py migrate "$@"
 }
 
 makemigrations() {
     _requires web_run
-    exec -w /code/sylwanspot web_run python manage.py makemigrations "$@"
+    exec -w /code web_run python manage.py makemigrations "$@"
 }
 
 check() {
     _requires web_run
-    exec -w /code/sylwanspot web_run ./manage.py check
+    exec -w /code web_run python manage.py check
 }
 
 test() {
     _requires web_run
-    exec -w /code/sylwanspot web_run python -m pytest "$@"
+    exec -w /code web_run python -m pytest "$@"
 }
 
 exec() {

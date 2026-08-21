@@ -1,6 +1,7 @@
 services:
   db:
-    image: postgres:16.2
+    build: ./postgres
+    image: sylwanspot-db:16.2
     restart: always
     environment:
       POSTGRES_DB: postgres

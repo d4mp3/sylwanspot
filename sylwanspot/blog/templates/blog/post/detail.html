@@ -19,16 +19,7 @@
     {% endfor %}
 
     {% with comments.count as total_comments %}
-        <h2>
-            {{ total_comments }}
-            {% if total_comments == 1 %}
-                komentarz
-            {% elif total_comments == 2 or total_comments == 3 or total_comments == 4 %}
-                komentarze
-            {% else %}
-                komentarzy
-            {% endif %}
-        </h2>
+        <h2>{{ total_comments }} {{ total_comments|pluralize_pl:"komentarz,komentarze,komentarzy" }}</h2>
     {% endwith %}
     {% for comment in comments %}
         <div class="comment">

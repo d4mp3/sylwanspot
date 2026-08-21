@@ -54,6 +54,16 @@ check() {
     exec -w /code web_run python manage.py check
 }
 
+lint() {
+    _requires web_run
+    exec -w /code web_run ruff check "$@"
+}
+
+format() {
+    _requires web_run
+    exec -w /code web_run ruff format "$@"
+}
+
 test() {
     _requires web_run
     exec -w /code web_run python -m pytest "$@"
@@ -93,6 +103,15 @@ Usage:
     ${BOLD}check${NORMAL}
 
         Validate django settings
+
+    ${BOLD}lint${NORMAL} [<arg>]
+
+        Run ruff over the codebase. Extra args are passed through, e.g.
+        `./do.sh lint --fix`.
+
+    ${BOLD}format${NORMAL} [<arg>]
+
+        Reformat the codebase with ruff format.
 
     ${BOLD}test${NORMAL} [<arg>]
 

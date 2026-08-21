@@ -10,7 +10,6 @@ import pytest
 from blog.models import Post
 from blog.search import TRIGRAM_THRESHOLD, search_posts
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -138,4 +137,4 @@ def test_transpositions_are_a_known_gap(make_post):
     make_post("Wdrażanie Django w Dockerze", "Treść.", "django")
 
     assert search_posts("djnago") == ([], "empty")
-    assert 0.28 < TRIGRAM_THRESHOLD
+    assert TRIGRAM_THRESHOLD > 0.28

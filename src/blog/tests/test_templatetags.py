@@ -8,7 +8,6 @@ import pytest
 
 from blog.templatetags.blog_tags import pluralize_pl
 
-
 FORMS = "wynik,wyniki,wyników"
 
 

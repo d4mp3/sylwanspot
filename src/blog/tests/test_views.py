@@ -15,7 +15,6 @@ from blog.models import Comment
 
 from .assertions import assert_contains
 
-
 pytestmark = pytest.mark.django_db
 
 

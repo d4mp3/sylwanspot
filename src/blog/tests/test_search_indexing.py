@@ -13,7 +13,6 @@ from django.db import connection
 from blog.models import Post
 from blog.search import search_posts
 
-
 pytestmark = pytest.mark.django_db
 
 

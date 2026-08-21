@@ -10,7 +10,6 @@ dozen search tests that fail as a consequence.
 import pytest
 from django.db import connection
 
-
 pytestmark = pytest.mark.django_db
 
 

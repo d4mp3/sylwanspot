@@ -1,4 +1,3 @@
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.mail import send_mail
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count
@@ -9,6 +8,7 @@ from taggit.models import Tag
 
 from .forms import CommentForm, EmailPostForm, SearchForm
 from .models import Post
+from .search import search_posts
 
 
 def post_detail(request, year, month, day, post):
@@ -132,26 +132,24 @@ def post_search(request):
     form = SearchForm()
     query = None
     results = []
+    # "fts" | "fuzzy" | "empty" -- lets the template tell the user when it is
+    # showing typo-corrected guesses rather than real matches.
+    search_mode = "empty"
 
     if "query" in request.GET:
         form = SearchForm(request.GET)
         if form.is_valid():
             query = form.cleaned_data["query"]
-            search_vector = SearchVector("title", weight="A", config="polish") + SearchVector(
-                "body", weight="B", config="polish"
-            )
-            search_query = SearchQuery(query, config="polish")
-            results = (
-                Post.published.annotate(
-                    search=search_vector,
-                    rank=SearchRank(search_vector, search_query),
-                )
-                .filter(rank__gte=0.3)
-                .order_by("-rank")
-            )
+            results, search_mode = search_posts(query)
 
     return render(
         request,
         "blog/post/search.html",
-        {"form": form, "query": query, "results": results},
+        {
+            "form": form,
+            "query": query,
+            "results": results,
+            "total_results": len(results),
+            "search_mode": search_mode,
+        },
     )

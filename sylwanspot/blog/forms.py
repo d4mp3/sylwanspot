@@ -22,4 +22,4 @@ class CommentForm(forms.ModelForm):
 
 
 class SearchForm(forms.Form):
-    query = forms.CharField(label="Szukana fraza:")
+    query = forms.CharField(label="Szukana fraza:", max_length=200)

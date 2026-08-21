@@ -5,17 +5,29 @@
     {% if query %}
         <h1>Posty zawierające "{{ query }}"</h1>
         <h3>
-            {% with results.count as total_results %}
-                Znaleziono {{ total_results }} wyników{{ total_results|pluralize }} # TODO: poprawić wyświetlanie liczby mnogiej i pojedynczej
-            {% endwith %}
+            {% if total_results %}
+                Znaleziono {{ total_results }} {{ total_results|pluralize_pl:"wynik,wyniki,wyników" }}
+            {% else %}
+                Brak wyników
+            {% endif %}
         </h3>
+        {% if search_mode == "fuzzy" %}
+            <p>
+                Nie znaleziono dokładnych trafień.
+                {% if total_results == 1 %}
+                    Poniżej podobny tytuł &ndash; może chodziło o niego?
+                {% else %}
+                    Poniżej podobne tytuły &ndash; może chodziło o któryś z nich?
+                {% endif %}
+            </p>
+        {% endif %}
         {% for post in results %}
             <h4>
                 <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
             </h4>
             {{ post.body|markdown|truncatewords_html:12 }}
         {% empty %}
-            <p>Brak wyników</p>
+            <p>Spróbuj innych słów kluczowych.</p>
         {% endfor %}
         <p><a href="{% url "blog:post_search" %}">Szukaj ponownie</a></p>
     {% else %}

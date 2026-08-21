@@ -25,6 +25,20 @@ line-length = 88
 target-version = "py312"
 src = ["src"]
 
+[tool.ruff.format]
+# Formatting-only excludes: the docs guide's Python examples use deliberately
+# column-aligned trailing comments as a teaching device (see
+# docs/przewodnik-po-projekcie.md), which `ruff format` would collapse to a
+# single space before each `#` -- a real regression in that file's
+# readability. Migrations are excluded from formatting because they are
+# Django-generated (or, for 0005, hand-written SQL) and reformatting them is
+# an edit this project's migration constraints forbid. This block only keeps
+# the *formatter* out of both paths: migrations stay fully covered by `ruff
+# check` (only E501 and I001 are silenced there, via the per-file-ignores
+# below), while the documentation was never in the linter's scope to begin
+# with -- `ruff check` does not discover `.md` files at all.
+exclude = ["docs/**/*.md", "src/blog/migrations/*"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM", "RUF"]
 # RUF012 (mutable-class-default) fires pervasively on Django's own
@@ -47,29 +61,15 @@ ignore = ["RUF012"]
 # is off limits here).
 "src/blog/migrations/*" = ["E501", "I001"]
 
-# E501 (line-too-long) below: `ruff format` (the next commit, Task 4) reflows
-# code and will shrink most of these lines under 88 chars, but it cannot
-# shorten long string literals, comments, or URLs -- those stay over the
-# limit no matter how the formatter wraps surrounding code. Task 4 re-audits
-# this whole list once formatting has landed and drops whatever ignore is no
-# longer needed; nothing here is meant to be permanent.
-"src/blog/models.py" = ["E501"]
-
-"src/blog/tests/*" = ["E501"]
-
-"src/blog/management/commands/rebuild_search_vectors.py" = ["E501"]
-
-"src/blog/signals.py" = ["E501"]
-
-"src/blog/templatetags/blog_tags.py" = ["E501"]
-
-"src/blog/urls.py" = ["E501"]
-
+# E501: the f-string building the "recommend by email" message body is a
+# single literal (subject/body text plus interpolated values); wrapping the
+# surrounding code cannot shorten the string itself below 88 chars.
 "src/blog/views.py" = ["E501"]
 
+# E501: AUTH_PASSWORD_VALIDATORS' "NAME" values are dotted import-path string
+# literals copied from Django's own validators; the longest one exceeds 88
+# chars on its own, and no reformatting of the surrounding dict shortens it.
 "src/sylwanspot/settings.py" = ["E501"]
-
-"src/sylwanspot/urls.py" = ["E501"]
 
 [build-system]
 requires = ["hatchling"]

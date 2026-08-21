@@ -34,4 +34,6 @@ class Command(BaseCommand):
             count += 1
 
         if options["verbosity"]:
-            self.stdout.write(self.style.SUCCESS(f"Rebuilt search_vector for {count} post(s)."))
+            self.stdout.write(
+                self.style.SUCCESS(f"Rebuilt search_vector for {count} post(s).")
+            )

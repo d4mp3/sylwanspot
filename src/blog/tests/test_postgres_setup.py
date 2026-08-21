@@ -21,7 +21,9 @@ def scalar(sql, params=None):
 
 
 def test_configuration_exists():
-    assert scalar("SELECT cfgname FROM pg_ts_config WHERE cfgname = 'polish'") == "polish"
+    assert (
+        scalar("SELECT cfgname FROM pg_ts_config WHERE cfgname = 'polish'") == "polish"
+    )
 
 
 @pytest.mark.parametrize("form", ["kot", "koty", "kota", "kotem"])
@@ -37,7 +39,10 @@ def test_hunspell_normalises_polish_inflection(form):
 def test_unknown_words_fall_through_to_simple():
     # Without `simple` as the terminal dictionary, technology names would be
     # dropped from the index entirely.
-    assert scalar("SELECT dictionary::text FROM ts_debug('polish', 'Kubernetes')") == "simple"
+    assert (
+        scalar("SELECT dictionary::text FROM ts_debug('polish', 'Kubernetes')")
+        == "simple"
+    )
 
 
 def test_stop_words_are_removed():

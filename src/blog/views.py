@@ -28,7 +28,9 @@ def post_detail(request, year, month, day, post):
     # List of similar posts
     post_tags_ids = post.tags.values_list("id", flat=True)
     similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
-    similar_posts = similar_posts.annotate(same_tags=Count("tags")).order_by("-same_tags", "-publish")[:4]
+    similar_posts = similar_posts.annotate(same_tags=Count("tags")).order_by(
+        "-same_tags", "-publish"
+    )[:4]
 
     return render(
         request,
@@ -108,7 +110,9 @@ def post_share(request, post_id):
     else:
         form = EmailPostForm()
 
-    return render(request, "blog/post/share.html", {"post": post, "form": form, "sent": sent})
+    return render(
+        request, "blog/post/share.html", {"post": post, "form": form, "sent": sent}
+    )
 
 
 @require_POST

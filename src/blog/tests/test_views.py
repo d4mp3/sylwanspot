@@ -46,7 +46,9 @@ class TestSearchView:
             (5, "Znaleziono 5 wyników"),
         ],
     )
-    def test_result_count_uses_the_correct_polish_form(self, client, make_posts, count, expected):
+    def test_result_count_uses_the_correct_polish_form(
+        self, client, make_posts, count, expected
+    ):
         # 1 -> "wynik", 2 -> "wyniki", 5 -> "wyników": the three cases the old
         # `{{ total|pluralize }}` could not express.
         make_posts(count)

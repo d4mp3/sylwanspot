@@ -23,7 +23,9 @@ def vector_of(post):
     holds, not what Django thinks it wrote.
     """
     with connection.cursor() as cursor:
-        cursor.execute("SELECT search_vector::text FROM blog_post WHERE id = %s", [post.pk])
+        cursor.execute(
+            "SELECT search_vector::text FROM blog_post WHERE id = %s", [post.pk]
+        )
         return cursor.fetchone()[0]
 
 

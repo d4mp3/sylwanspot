@@ -81,7 +81,9 @@ def test_fuzzy_fallback_recovers_missing_diacritics(make_post):
     assert [p.pk for p in results] == [post.pk]
 
 
-def test_fuzzy_fallback_does_not_run_when_fts_succeeds(make_post, django_assert_num_queries):
+def test_fuzzy_fallback_does_not_run_when_fts_succeeds(
+    make_post, django_assert_num_queries
+):
     make_post("Kubernetes dla początkujących", "Treść.", "k8s")
     # The successful path costs exactly one query: the fallback must not be
     # executed speculatively alongside it.
@@ -90,7 +92,9 @@ def test_fuzzy_fallback_does_not_run_when_fts_succeeds(make_post, django_assert_
     assert mode == "fts"
 
 
-def test_fallback_costs_one_extra_query_only_when_fts_is_empty(make_post, django_assert_num_queries):
+def test_fallback_costs_one_extra_query_only_when_fts_is_empty(
+    make_post, django_assert_num_queries
+):
     make_post("Kubernetes dla początkujących", "Treść.", "k8s")
     with django_assert_num_queries(2):
         _, mode = search_posts("kubernets")

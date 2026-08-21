@@ -21,12 +21,16 @@ def refresh_search_vector_on_save(sender, instance, **kwargs):
     instance.update_search_vector()
 
 
-@receiver(m2m_changed, sender=TaggedItem, dispatch_uid="blog.refresh_search_vector_on_tags")
+@receiver(
+    m2m_changed, sender=TaggedItem, dispatch_uid="blog.refresh_search_vector_on_tags"
+)
 def refresh_search_vector_on_tag_change(sender, instance, action, **kwargs):
     # django-taggit sends m2m_changed with sender=TaggedItem for every tagged
     # model, so filter on the instance. Only the post_* actions matter -- the
     # pre_* ones fire before the rows change. A save() that also changes tags
     # therefore writes the vector twice; the second write is the correct one
     # and the cost is one extra UPDATE on an edit, which a blog can afford.
-    if action in ("post_add", "post_remove", "post_clear") and isinstance(instance, Post):
+    if action in ("post_add", "post_remove", "post_clear") and isinstance(
+        instance, Post
+    ):
         instance.update_search_vector()

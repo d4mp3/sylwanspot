@@ -18,14 +18,16 @@ services:
       - backend
 
   web:
-    build: ./
+    build:
+      context: .
+      target: dev
+    working_dir: /code
     volumes:
       - .:/code
     environment:
       EMAIL_HOST_USER: 'damian.pszczola@gmail.com'
       EMAIL_HOST_PASSWORD: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
       DEFAULT_FROM_EMAIL: 'SylwanBlog <damian.pszczola@gmail.com>'
-      PYTHONPATH: "/code/src"
       DJANGO_SETTINGS_MODULE: "sylwanspot.settings"
       POSTGRES_DB: "postgres"
       POSTGRES_USER: "postgres"
@@ -38,7 +40,7 @@ services:
   web_migrate:
     extends:
       service: web
-    command: python /code/manage.py migrate
+    command: python manage.py migrate
     depends_on:
       db:
         condition: service_healthy
@@ -46,7 +48,7 @@ services:
   web_run:
     extends:
       service: web
-    command: python /code/manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
     depends_on:

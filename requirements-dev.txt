@@ -1,6 +1,0 @@
-# Narzędzia potrzebne wyłącznie do uruchamiania testów. Obraz dev instaluje je
-# obok requirements.txt; produkcyjny build może pominąć ten plik.
--r requirements.txt
-
-pytest~=8.3
-pytest-django~=4.9

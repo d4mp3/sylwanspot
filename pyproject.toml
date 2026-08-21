@@ -1,0 +1,43 @@
+[project]
+name = "sylwanspot"
+version = "0.1.0"
+description = "Blog Django z polskim wyszukiwaniem pełnotekstowym"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django~=5.2",
+    "python-decouple==3.8",
+    "django-taggit==5.0.1",
+    "markdown==3.6",
+    "psycopg[binary]==3.1.18",
+]
+
+[dependency-groups]
+dev = [
+    "pytest~=8.3",
+    "pytest-django~=4.9",
+    "ruff>=0.14",
+    "mypy>=1.14",
+    "django-stubs[compatible-mypy]>=5.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sylwanspot", "src/blog"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "sylwanspot.settings"
+python_files = ["test_*.py"]
+testpaths = ["src"]
+# --reuse-db: nie kasuj bazy testowej po przebiegu, użyj jej ponownie.
+# Django i tak uruchamia na niej `migrate`, więc nowe migracje są wykrywane
+# normalnie -- oszczędność bierze się z tego, że migracja 0005 (budowa słownika
+# hunspell `polish`) nie wykonuje się od zera przy każdym wywołaniu.
+#
+# Czego reuse NIE wykryje: zmiany w już zastosowanej migracji. `migrate` ją
+# pominie, zostawiając bazę ze starym schematem. W takim wypadku (a także po
+# usunięciu, przenumerowaniu lub zgnieceniu migracji) trzeba raz uruchomić
+# z --create-db.
+addopts = "--reuse-db"

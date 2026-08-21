@@ -54,6 +54,11 @@ check() {
     exec -w /code/sylwanspot web_run ./manage.py check
 }
 
+test() {
+    _requires web_run
+    exec -w /code/sylwanspot web_run python -m pytest "$@"
+}
+
 exec() {
     $DOCKER_COMPOSE exec -e COLUMNS -e LINES "$@"
 }
@@ -88,6 +93,12 @@ Usage:
     ${BOLD}check${NORMAL}
 
         Validate django settings
+
+    ${BOLD}test${NORMAL} [<arg>]
+
+        Run the test suite with pytest. Extra args are passed through, e.g.
+        `./do.sh test blog/tests/test_search.py -k fuzzy`.
+
 
     ${BOLD}shell${NORMAL}
 

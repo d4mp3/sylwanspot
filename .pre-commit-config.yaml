@@ -1,0 +1,31 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.3
+    hooks:
+      # `uv lock` regenerates uv.lock in place; pre-commit reports the
+      # resulting modification as a hook failure, which is how a lockfile
+      # out of step with pyproject.toml gets caught.
+      - id: uv-lock
+
+  - repo: local
+    hooks:
+      # Not mirrors-mypy: its isolated environment carries neither Django,
+      # django-stubs, nor the project itself, so using it would mean
+      # duplicating the dependency list in YAML and keeping it in step with
+      # uv.lock by hand.
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        # Wtyczka django potrzebuje całego projektu, nie pojedynczych plików --
+        # mypy bierze listę z `files` w pyproject.toml.
+        pass_filenames: false
+        require_serial: true

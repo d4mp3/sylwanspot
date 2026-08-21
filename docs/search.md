@@ -15,7 +15,7 @@ pg_trgm strict_word_similarity on titles
 typo-tolerant guesses
 ```
 
-Implementation: [`blog/search.py`](../sylwanspot/blog/search.py). Database
+Implementation: [`blog/search.py`](../src/blog/search.py). Database
 infrastructure: [`postgres/README.md`](../postgres/README.md).
 
 ## Decisions
@@ -54,7 +54,7 @@ never be part of a functional index, and dropping them would lose the most
 precise signal a post has after its title.
 
 The column is maintained by `post_save` + `m2m_changed` receivers in
-[`blog/signals.py`](../sylwanspot/blog/signals.py), which write it *inside* the
+[`blog/signals.py`](../src/blog/signals.py), which write it *inside* the
 same transaction as the content change (not via `transaction.on_commit`), so
 the derived column is atomic with its source. `manage.py rebuild_search_vectors`
 repairs rows written by paths that bypass signals (`bulk_create`, raw SQL,

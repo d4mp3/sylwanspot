@@ -32,21 +32,26 @@ Ten plik zaczyna się od zera i nie zakłada znajomości Django.
 <a id="mapa-gdzie-co-lezy"></a>
 ## Mapa: gdzie co leży
 
-Projekt ma dwa poziomy zagnieżdżenia o tej samej nazwie, co bywa mylące na
-początku:
+Katalog projektu Django nazywa się tak samo jak repozytorium, ale dzieli je
+`src/` — warto to zapamiętać, bo nazwa wraca w dwóch miejscach:
 
 ```
 sylwanspot/                  <- katalog repozytorium (tu jest docker-compose.yml)
 ├── docker-compose.yml       usługi: db, web, web_migrate, web_run
-├── Dockerfile               obraz aplikacji (python:3.12-slim + requirements)
+├── Dockerfile               obraz aplikacji (python:3.12-slim + uv, wielostopniowy)
 ├── postgres/                obraz bazy (PostgreSQL + polski Hunspell)
 ├── do.sh                    skróty do docker compose
-├── requirements.txt
+├── pyproject.toml           zależności + konfiguracja pytest/ruff/mypy
+├── uv.lock                  zamknięte wersje wszystkich zależności
+├── .python-version          3.12
+├── .pre-commit-config.yaml
+├── .dockerignore
+├── manage.py
 ├── docs/
-└── sylwanspot/              <- katalog projektu Django (tu jest manage.py)
-    ├── manage.py
+└── src/                     <- kod (instalowany edytowalnie)
     ├── sylwanspot/          <- pakiet konfiguracyjny projektu
     │   ├── settings.py
+    │   ├── settings_typecheck.py  atrapy POSTGRES_* dla mypy
     │   ├── urls.py          root URLconf
     │   ├── wsgi.py / asgi.py
     │   └── __init__.py
@@ -70,7 +75,7 @@ sylwanspot/                  <- katalog repozytorium (tu jest docker-compose.yml
         └── management/commands/
 ```
 
-Zasada, którą warto zapamiętać: **katalog projektu** (`sylwanspot/sylwanspot/`)
+Zasada, którą warto zapamiętać: **katalog projektu** (`src/sylwanspot/`)
 trzyma konfigurację i nie zawiera logiki. **Aplikacja** (`blog/`) zawiera całą
 logikę. Django pozwala mieć wiele aplikacji w jednym projekcie; tutaj jest
 jedna.
@@ -106,10 +111,36 @@ Testy uruchamiasz przez `./do.sh test` (pod spodem `pytest` w kontenerze
 więc unittestowy discovery Django znajdzie zero przypadków i wypisze
 `NO TESTS RAN` zamiast błędu. Szczegóły: [Etap 8](#etap-8).
 
-Dwie rzeczy warte odnotowania w `docker-compose.yml`: `PYTHONPATH=/code/sylwanspot`
-sprawia, że pakiet `sylwanspot` i `blog` są importowalne, a wolumen `.:/code`
-montuje repo do kontenera — dlatego `runserver` przeładowuje się po każdej
-edycji pliku i nie musisz przebudowywać obrazu, żeby zobaczyć zmianę w kodzie.
+Jakość kodu ma trzy komendy, wszystkie w kontenerze:
+
+```bash
+./do.sh lint        # ruff check
+./do.sh format      # ruff format
+./do.sh typecheck   # mypy
+```
+
+Te same narzędzia chodzą z `pre-commit`. Hooki instaluje się raz —
+`uv run pre-commit install` — a potem uruchamiają się same przy każdym
+`git commit`; całe repo naraz sprawdza `uv run pre-commit run --all-files`.
+mypy działa też poza kontenerem (`uv run mypy`) dzięki
+`src/sylwanspot/settings_typecheck.py` — patrz komentarz w tym pliku.
+
+Zależności dodaje się na hoście: `uv add <paczka>`, potem `./do.sh build`.
+
+`ruff format` celowo pomija dwie rzeczy: ten przewodnik (przykłady w nim
+używają wyrównanych w kolumnie komentarzy końcowych, które formatter zbiłby do
+jednej spacji) oraz migracje w `blog/migrations/` (są generowane przez Django
+albo, jak `0005`, pisane ręcznie w surowym SQL-u — przeformatowanie byłoby
+edycją, na którą nie ma zgody). Linter mimo to sprawdza migracje normalnie —
+wyciszone są w nich tylko `E501` i `I001`.
+
+Dwie rzeczy warte odnotowania w `docker-compose.yml`: `target: dev` wybiera
+etap obrazu z narzędziami deweloperskimi, a wolumen `.:/code` montuje repo do
+kontenera — dlatego `runserver` przeładowuje się po każdej edycji pliku i nie
+musisz przebudowywać obrazu, żeby zobaczyć zmianę w kodzie. Pakiety
+`sylwanspot` i `blog` są importowalne bez ręcznego ustawiania ścieżek importu,
+bo `uv sync` instaluje projekt edytowalnie ze `src/`. Samo środowisko leży w
+`/opt/venv`, **poza** `/code` — inaczej bind mount by je przykrył.
 
 ---
 
@@ -119,14 +150,14 @@ edycji pliku i nie musisz przebudowywać obrazu, żeby zobaczyć zmianę w kodzi
 Ta sekwencja jest sercem Django. Przeczytaj cztery pliki po kolei i będziesz
 rozumiał 80% frameworka.
 
-### 1.1 `sylwanspot/manage.py`
+### 1.1 `manage.py`
 
 Trzy linie, które mają znaczenie: ustawia `DJANGO_SETTINGS_MODULE` na
 `sylwanspot.settings` i przekazuje `sys.argv` do `execute_from_command_line`.
 To wszystko — `manage.py` to tylko launcher komend. Każde `manage.py cokolwiek`
 przechodzi tędy.
 
-### 1.2 `sylwanspot/sylwanspot/settings.py`
+### 1.2 `src/sylwanspot/settings.py`
 
 Konfiguracja całego projektu. Przy pierwszym czytaniu skup się na czterech
 miejscach, resztę pomiń:
@@ -144,7 +175,7 @@ miejscach, resztę pomiń:
 * **`MIDDLEWARE`** — lista przetwarzająca *każde* żądanie po kolei. Tu żyje
   ochrona CSRF, sesje i uwierzytelnianie.
 
-### 1.3 `sylwanspot/sylwanspot/urls.py` — root URLconf
+### 1.3 `src/sylwanspot/urls.py` — root URLconf
 
 Punkt wejścia routingu. Trzy wpisy: panel admina, `include('blog.urls')` pod
 prefiksem `blog/` oraz `sitemap.xml`.
@@ -244,7 +275,7 @@ Model to *deklaracja stanu docelowego*; migracje to *kroki dojścia*. Django
 generuje je z różnicy między modelem a ostatnią migracją:
 
 ```bash
-docker compose exec web_run python /code/sylwanspot/manage.py makemigrations blog --check --dry-run
+docker compose exec web_run python /code/manage.py makemigrations blog --check --dry-run
 # "No changes detected" = model i migracje są spójne
 ```
 
@@ -259,7 +290,7 @@ klasa `ModelAdmin` z deklaracjami — `list_display`, `list_filter`,
 (pole autora jako ID, nie rozwijana lista z wszystkimi userami).
 
 ```bash
-docker compose exec web_run python /code/sylwanspot/manage.py createsuperuser
+docker compose exec web_run python /code/manage.py createsuperuser
 # potem http://localhost:8000/admin/
 ```
 
@@ -497,14 +528,14 @@ Uzasadnienia decyzji, pomiary i znane ograniczenia:
 <a id="etap-8"></a>
 ## Etap 8 — testy
 
-**Czytaj:** `sylwanspot/pytest.ini` → `blog/tests/conftest.py` → dowolny
-`blog/tests/test_*.py`
+**Czytaj:** `pyproject.toml` (sekcja `[tool.pytest.ini_options]`) →
+`src/blog/tests/conftest.py` → dowolny `src/blog/tests/test_*.py`
 
 ```bash
-./do.sh test                                        # całość
-./do.sh test blog/tests/test_search.py              # jeden plik
-./do.sh test blog/tests/test_search.py -k fuzzy     # jedna grupa przypadków
-./do.sh test --create-db                            # po EDYCJI istniejącej migracji
+./do.sh test                                            # całość
+./do.sh test src/blog/tests/test_search.py              # jeden plik
+./do.sh test src/blog/tests/test_search.py -k fuzzy     # jedna grupa przypadków
+./do.sh test --create-db                                # po EDYCJI istniejącej migracji
 ```
 
 ### 8.1 Dlaczego pytest, a nie `manage.py test`
@@ -519,8 +550,10 @@ Konsekwencja: **`manage.py test` nie znajdzie tych testów.** Wypisze
 `Found 0 test(s)` i `NO TESTS RAN` — nie błąd, więc łatwo tego nie zauważyć.
 Jedyną obsługiwaną komendą jest `./do.sh test`.
 
-`pytest.ini` leży obok `manage.py`, bo to katalog, z którego pakiet `blog` jest
-importowalny. Ustawia `DJANGO_SETTINGS_MODULE` i `--reuse-db`.
+Konfiguracja pytesta siedzi w `pyproject.toml`, w sekcji
+`[tool.pytest.ini_options]` — tam są `DJANGO_SETTINGS_MODULE`, `testpaths` i
+`--reuse-db`. Pakiety znajduje się bez `pythonpath`, bo `uv sync` instaluje
+projekt edytowalnie ze `src/`.
 
 `--reuse-db` znaczy „nie kasuj bazy testowej po przebiegu". Django i tak puszcza
 na niej `migrate`, więc **nowe migracje są podchwytywane normalnie** — oszczędza
@@ -606,7 +639,7 @@ czy czegoś nie rozumiesz.
 * Zakomentowana funkcja `post_list` w `views.py` — zostawiona, świetna do nauki
   (etap 3.2).
 * Klasa `Postadmin` (małe „a") obok `CommentAdmin`. Kosmetyka.
-* Pusty katalog `test/` w korzeniu repo. Testy są w `blog/tests/`.
+* Pusty katalog `test/` w korzeniu repo. Testy są w `src/blog/tests/`.
 * Brak `CLAUDE.md`. Jeśli będziesz często wracał do tego repo z Claude Code,
   warto go dodać przez `/init`.
 

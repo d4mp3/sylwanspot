@@ -39,8 +39,8 @@ already has the objects is a no-op.
 docker compose exec -T db psql -U postgres -d postgres -f - < postgres/verify-polish-search.sql
 ```
 
-The same assertions run as tests in `blog/tests/test_postgres_setup.py`
-(`./do.sh test blog/tests/test_postgres_setup.py`).
+The same assertions run as tests in `src/blog/tests/test_postgres_setup.py`
+(`./do.sh test src/blog/tests/test_postgres_setup.py`).
 
 ## Notes on the dictionary files
 

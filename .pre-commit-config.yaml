@@ -1,25 +1,37 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.4
-    hooks:
-      - id: ruff-check
-        args: [--fix]
-      - id: ruff-format
-
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.3
-    hooks:
-      # `uv lock` regenerates uv.lock in place; pre-commit reports the
-      # resulting modification as a hook failure, which is how a lockfile
-      # out of step with pyproject.toml gets caught.
-      - id: uv-lock
-
+  # All three of these run through `uv run` instead of a mirror repo, so
+  # uv.lock stays the single source of truth for tool versions. A mirror
+  # pins its own `rev:`, which `pre-commit autoupdate` would happily move
+  # away from the locked version -- and then `./do.sh lint` and the hook
+  # disagree about the same code. mypy could not use its mirror anyway: the
+  # isolated environment carries neither Django, django-stubs, nor the
+  # project itself, so it would mean duplicating the dependency list in YAML
+  # and keeping it in step with uv.lock by hand.
   - repo: local
     hooks:
-      # Not mirrors-mypy: its isolated environment carries neither Django,
-      # django-stubs, nor the project itself, so using it would mean
-      # duplicating the dependency list in YAML and keeping it in step with
-      # uv.lock by hand.
+      # --force-exclude on both ruff hooks: pre-commit hands ruff explicit
+      # file paths, and ruff applies its configured excludes to paths named
+      # on the command line only when asked to. The mirror hooks supplied
+      # this flag in their own `entry`; here it is ours to pass. It carries
+      # real weight for `ruff format`, whose `exclude` in pyproject.toml is
+      # the only thing keeping the formatter away from
+      # `src/blog/migrations/` and the guide's column-aligned examples --
+      # without the flag it reformats all six migrations. On `ruff check`
+      # the flag changes nothing today (the migrations are linted on
+      # purpose, with only E501 and I001 silenced per file); it is passed
+      # for symmetry, so a future top-level `exclude` is honoured by both.
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude --fix
+        language: system
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+
       - id: mypy
         name: mypy
         entry: uv run mypy
@@ -29,3 +41,11 @@ repos:
         # mypy bierze listę z `files` w pyproject.toml.
         pass_filenames: false
         require_serial: true
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.3
+    hooks:
+      # `uv lock` regenerates uv.lock in place; pre-commit reports the
+      # resulting modification as a hook failure, which is how a lockfile
+      # out of step with pyproject.toml gets caught.
+      - id: uv-lock

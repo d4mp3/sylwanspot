@@ -29,7 +29,17 @@ class Command(BaseCommand):
         count = 0
         # prefetch_related keeps this at 2 reads + 1 write per chunk instead of
         # a tags query per post.
-        for post in posts.prefetch_related("tags").iterator(chunk_size=200):
+        #
+        # The ignore below is a stubs limitation, not a real problem:
+        # django-taggit ships no type information (no py.typed), so
+        # `Post.tags` reaches mypy as Any and the django plugin cannot see
+        # that a TaggableManager is prefetchable. It is -- this is taggit's
+        # own documented idiom and it works at runtime. Silenced on this one
+        # line rather than for the module, so any other error here still
+        # surfaces.
+        for post in posts.prefetch_related("tags").iterator(  # type: ignore[misc]
+            chunk_size=200
+        ):
             post.update_search_vector()
             count += 1
 

@@ -37,7 +37,7 @@ Katalog projektu Django nazywa się tak samo jak repozytorium, ale dzieli je
 
 ```
 sylwanspot/                  <- katalog repozytorium (tu jest docker-compose.yml)
-├── docker-compose.yml       usługi: db, web, web_migrate, web_run
+├── docker-compose.yml       usługi: db, web_migrate, web_run
 ├── Dockerfile               obraz aplikacji (python:3.12-slim + uv, wielostopniowy)
 ├── postgres/                obraz bazy (PostgreSQL + polski Hunspell)
 ├── do.sh                    skróty do docker compose
@@ -90,14 +90,21 @@ przeglądarce.
 
 **Czytaj:** `docker-compose.yml` → `Dockerfile` → `do.sh`
 
-Cztery usługi, z czego dwie to warianty tej samej:
+Trzy usługi, z czego dwie to warianty tej samej:
 
 | usługa | rola |
 | --- | --- |
 | `db` | PostgreSQL 16.2 z polskim słownikiem (build z `./postgres`) |
-| `web` | usługa bazowa — sam obraz i zmienne środowiskowe, nigdy nie uruchamiana wprost |
-| `web_migrate` | `extends: web` + `manage.py migrate`, czeka na `db` healthy |
-| `web_run` | `extends: web` + `runserver 0.0.0.0:8000`, czeka na `web_migrate` |
+| `web_migrate` | `<<: *web` + `manage.py migrate`, czeka na `db` healthy |
+| `web_run` | `<<: *web` + `runserver 0.0.0.0:8000`, czeka na `web_migrate` |
+
+Wspólną część obu — obraz, `working_dir`, wolumen `.:/code`, zmienne
+środowiskowe, sieć — trzyma jeden blok `x-web: &web` **nad** `services:`.
+To nie usługa, tylko fragment do ponownego użycia: compose ignoruje klucze
+najwyższego poziomu zaczynające się od `x-`, a `<<: *web` w każdej z usług
+wkleja jego zawartość. Gdyby ta wspólna definicja była zwykłą usługą (a
+potomkowie sięgali po nią przez `extends:`), `docker compose up` startowałby
+ją jak każdą inną — czyli drugi, niepotrzebny `runserver` obok `web_run`.
 
 To jest cały mechanizm startu: `web_run` nie wstanie, dopóki migracje się nie
 wykonają, a te nie wystartują, dopóki healthcheck bazy nie przejdzie.
@@ -132,7 +139,8 @@ używają wyrównanych w kolumnie komentarzy końcowych, które formatter zbiłb
 jednej spacji) oraz migracje w `blog/migrations/` (są generowane przez Django
 albo, jak `0005`, pisane ręcznie w surowym SQL-u — przeformatowanie byłoby
 edycją, na którą nie ma zgody). Linter mimo to sprawdza migracje normalnie —
-wyciszone są w nich tylko `E501` i `I001`.
+w `per-file-ignores` wyciszone są w nich tylko `E501` i `I001` (projektowo,
+dla całego repo, wyciszony jest jeszcze `RUF012` — więc obowiązuje i tutaj).
 
 Dwie rzeczy warte odnotowania w `docker-compose.yml`: `target: dev` wybiera
 etap obrazu z narzędziami deweloperskimi, a wolumen `.:/code` montuje repo do
@@ -629,7 +637,6 @@ czy czegoś nie rozumiesz.
 * Hasło do SMTP jest wpisane w `docker-compose.yml` jako placeholder z iksów.
   Zanim wstawisz tam prawdziwe, przenieś je do pliku `.env` (ten plik już
   raz z repo usunięto — patrz `git log`).
-* `sylwanspot/db.sqlite3` leży w repo, choć projekt używa PostgreSQL. Pozostałość.
 
 **Świadome lub nieszkodliwe:**
 
@@ -639,7 +646,6 @@ czy czegoś nie rozumiesz.
 * Zakomentowana funkcja `post_list` w `views.py` — zostawiona, świetna do nauki
   (etap 3.2).
 * Klasa `Postadmin` (małe „a") obok `CommentAdmin`. Kosmetyka.
-* Pusty katalog `test/` w korzeniu repo. Testy są w `src/blog/tests/`.
 * Brak `CLAUDE.md`. Jeśli będziesz często wracał do tego repo z Claude Code,
   warto go dodać przez `/init`.
 

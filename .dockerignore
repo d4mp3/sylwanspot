@@ -1,10 +1,18 @@
+# Docker matches these patterns against whole paths, not at arbitrary depth:
+# a bare `__pycache__/` only excludes one at the context root, so the `**/`
+# prefix is what actually keeps host-generated caches (and, in a worktree
+# checkout, a 164 MB `.claude/worktrees/<name>/.venv`) out of the build
+# context.
 .git/
 .gitignore
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+.claude/
+.superpowers/
+.env
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
 docs/
 *.sqlite3

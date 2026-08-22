@@ -44,6 +44,11 @@ def post_detail(request, year, month, day, post):
     )
 
 
+# Import kept inside the commented block so it travels with the code it
+# serves: uncomment the function and the import comes with it.
+# from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+#
+#
 # def post_list(request, tag_slug=None):
 #     post_list = Post.published.all()
 #     tag = None

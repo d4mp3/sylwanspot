@@ -19,6 +19,7 @@ from django.contrib.postgres.search import (
     TrigramStrictWordSimilarity,
 )
 from django.db.models import F, TextField, Value
+from django.db.models.expressions import CombinedExpression
 
 from .models import Post
 
@@ -75,7 +76,12 @@ def build_post_search_vector(*, title, tags, body):
     # false positive, and the alternative (padding the text with filler tokens
     # to create a position gap) pollutes the index for no real gain.
     parts = {"title": title, "tags": tags, "body": body}
-    vector = None
+    # Annotated because the accumulator changes type as it grows: the first
+    # iteration stores a SearchVector, every later one stores the
+    # CombinedExpression that `SearchVector + SearchVector` returns. Without
+    # the annotation mypy infers `SearchVector | None` from the initializer
+    # and rejects the second assignment.
+    vector: SearchVector | CombinedExpression | None = None
     for field, weight in SEARCH_WEIGHTS:
         piece = SearchVector(
             Value(parts[field] or "", output_field=TextField()),

@@ -125,7 +125,7 @@ Usage:
     ${BOLD}test${NORMAL} [<arg>]
 
         Run the test suite with pytest. Extra args are passed through, e.g.
-        `./do.sh test blog/tests/test_search.py -k fuzzy`.
+        `./do.sh test src/blog/tests/test_search.py -k fuzzy`.
 
 
     ${BOLD}shell${NORMAL}

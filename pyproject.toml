@@ -42,30 +42,10 @@ target-version = "py312"
 src = ["src"]
 
 [tool.ruff.format]
-# Formatting-only excludes: the docs guide's Python examples use deliberately
-# column-aligned trailing comments as a teaching device (see
-# docs/przewodnik-po-projekcie.md), which `ruff format` would collapse to a
-# single space before each `#` -- a real regression in that file's
-# readability. Migrations are excluded from formatting because they are
-# Django-generated (or, for 0005, hand-written SQL) and reformatting them is
-# an edit this project's migration constraints forbid. This block only keeps
-# the *formatter* out of both paths: migrations stay fully covered by `ruff
-# check` (only E501 and I001 are silenced there, via the per-file-ignores
-# below), while the documentation was never in the linter's scope to begin
-# with -- `ruff check` does not discover `.md` files at all.
 exclude = ["docs/**/*.md", "src/blog/migrations/*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM", "RUF"]
-# RUF012 (mutable-class-default) fires pervasively on Django's own
-# declarative idiom: Model.Meta/ModelAdmin/ModelForm.Meta attributes
-# (ordering, list_display, fields, ...) and migration dependencies/
-# operations are all class-level list/tuple/dict literals that the
-# framework reads but never mutates on an instance. Annotating every
-# framework-mandated attribute as typing.ClassVar would fight the
-# framework rather than improve the code, and it would need repeating in
-# every model/admin/form/migration file that will ever exist in this
-# project. Silenced project-wide instead of per file.
 ignore = ["RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
@@ -115,13 +95,13 @@ django_settings_module = "sylwanspot.settings_typecheck"
 DJANGO_SETTINGS_MODULE = "sylwanspot.settings"
 python_files = ["test_*.py"]
 testpaths = ["src"]
-# --reuse-db: nie kasuj bazy testowej po przebiegu, użyj jej ponownie.
-# Django i tak uruchamia na niej `migrate`, więc nowe migracje są wykrywane
-# normalnie -- oszczędność bierze się z tego, że migracja 0005 (budowa słownika
-# hunspell `polish`) nie wykonuje się od zera przy każdym wywołaniu.
+# --reuse-db: do not drop the test database after the run, reuse it.
+# Django still runs `migrate` on it, so new migrations are detected
+# normally -- the savings come from migration 0005 (building the
+# `polish` hunspell dictionary) not executing from scratch on every run.
 #
-# Czego reuse NIE wykryje: zmiany w już zastosowanej migracji. `migrate` ją
-# pominie, zostawiając bazę ze starym schematem. W takim wypadku (a także po
-# usunięciu, przenumerowaniu lub zgnieceniu migracji) trzeba raz uruchomić
-# z --create-db.
+# What reuse will NOT detect: changes to an already applied migration.
+# `migrate` will skip it, leaving the database with the old schema.
+# In that case (as well as after removing, renumbering or squashing
+# migrations) you need to run once with --create-db.
 addopts = "--reuse-db"

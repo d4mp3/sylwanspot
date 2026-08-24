@@ -37,8 +37,8 @@ repos:
         entry: uv run mypy
         language: system
         types: [python]
-        # Wtyczka django potrzebuje całego projektu, nie pojedynczych plików --
-        # mypy bierze listę z `files` w pyproject.toml.
+        # The django plugin needs the whole project, not individual files --
+        # mypy takes the list from `files` in pyproject.toml.
         pass_filenames: false
         require_serial: true
 

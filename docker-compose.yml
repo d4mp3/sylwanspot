@@ -1,7 +1,3 @@
-# Wspólna definicja usługi webowej. Rozszerzenie `x-`, a nie usługa: compose
-# ignoruje klucze najwyższego poziomu zaczynające się od `x-`, więc `up` nie ma
-# tu czego wystartować. Jako usługa z `extends:` w potomkach uruchamiałaby się
-# jak każda inna -- drugi, zbędny `runserver` obok `web_run`.
 x-web: &web
   build:
     context: .

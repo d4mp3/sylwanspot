@@ -217,5 +217,4 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Worktree'y tworzone przez Claude Code (izolowane workspace'y).
 .claude/worktrees/

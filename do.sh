@@ -36,42 +36,47 @@ stop() {
 
 shell() {
     _requires web_run
-    exec -w /code web_run /bin/bash
+    exec -w /app web_run /bin/bash
 }
 
 migrate() {
     _requires web_run
-    exec -w /code web_run python manage.py migrate "$@"
+    exec -w /app web_run python manage.py migrate "$@"
 }
 
 makemigrations() {
     _requires web_run
-    exec -w /code web_run python manage.py makemigrations "$@"
+    exec -w /app web_run python manage.py makemigrations "$@"
+}
+
+startapp() {
+    _requires web_run
+    exec -w /app/src web_run django-admin startapp --template=../app_template "$@"
 }
 
 check() {
     _requires web_run
-    exec -w /code web_run python manage.py check
+    exec -w /app web_run python manage.py check
 }
 
 lint() {
     _requires web_run
-    exec -w /code web_run ruff check "$@"
+    exec -w /app web_run ruff check "$@"
 }
 
 format() {
     _requires web_run
-    exec -w /code web_run ruff format "$@"
+    exec -w /app web_run ruff format "$@"
 }
 
 typecheck() {
     _requires web_run
-    exec -w /code web_run mypy "$@"
+    exec -w /app web_run mypy "$@"
 }
 
 test() {
     _requires web_run
-    exec -w /code web_run python -m pytest "$@"
+    exec -w /app web_run python -m pytest "$@"
 }
 
 exec() {
@@ -105,6 +110,11 @@ Usage:
 
         Create a new Django migration, using the given args
 
+    ${BOLD}startapp${NORMAL} <name>
+
+        Create a new Django app under src/, e.g. \`./do.sh startapp account\`.
+        Remember to add its AppConfig to INSTALLED_APPS afterwards.
+
     ${BOLD}check${NORMAL}
 
         Validate django settings
@@ -112,7 +122,7 @@ Usage:
     ${BOLD}lint${NORMAL} [<arg>]
 
         Run ruff over the codebase. Extra args are passed through, e.g.
-        `./do.sh lint --fix`.
+        \`./do.sh lint --fix\`.
 
     ${BOLD}format${NORMAL} [<arg>]
 
@@ -125,7 +135,7 @@ Usage:
     ${BOLD}test${NORMAL} [<arg>]
 
         Run the test suite with pytest. Extra args are passed through, e.g.
-        `./do.sh test src/blog/tests/test_search.py -k fuzzy`.
+        \`./do.sh test src/blog/tests/test_search.py -k fuzzy\`.
 
 
     ${BOLD}shell${NORMAL}
@@ -135,7 +145,7 @@ Usage:
     ${BOLD}start${NORMAL} [<arg>]
 
         Start the django server (and dependent services)
-        You can pass `-d` for running detached.
+        You can pass \`-d\` for running detached.
 
     ${BOLD}stop${NORMAL} [<arg>]
 

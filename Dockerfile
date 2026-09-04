@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
     PATH="/opt/venv/bin:$PATH"
-WORKDIR /code
+WORKDIR /app
 
 # Cienka wspólna warstwa: uv plus same manifesty. Zależności instalują się w
 # warstwie, która nie widzi kodu, więc edycja pliku .py nie unieważnia cache'u.
@@ -17,7 +17,8 @@ COPY pyproject.toml uv.lock ./
 FROM builder AS dev
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project
-COPY . .
+COPY src/ ./src/
+COPY manage.py ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -25,12 +26,13 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 FROM builder AS prod-build
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
-COPY . .
+COPY src/ ./src/
+COPY manage.py ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
 FROM base AS prod
 COPY --from=prod-build /opt/venv /opt/venv
 COPY manage.py ./
-RUN useradd --create-home --uid 1000 app && chown -R app:app /code
+RUN useradd --create-home --uid 1001 app && chown -R app:app /app
 USER app

@@ -2,9 +2,9 @@ x-web: &web
   build:
     context: .
     target: dev
-  working_dir: /code
+  working_dir: /app
   volumes:
-    - .:/code
+    - .:/app
   environment:
     EMAIL_HOST_USER: 'damian.pszczola@gmail.com'
     EMAIL_HOST_PASSWORD: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'

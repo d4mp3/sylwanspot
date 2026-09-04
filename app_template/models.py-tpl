@@ -1,0 +1,2 @@
+# Models for the {{ app_name }} app. Add the import together with the first
+# model -- an unused `from django.db import models` is an F401 error in ruff.

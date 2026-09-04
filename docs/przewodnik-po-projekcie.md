@@ -4,32 +4,34 @@ Przewodnik po **całym** projekcie Django, nie po samym wyszukiwaniu. Kolejnoś�
 jest taka, żeby każdy plik wyjaśniał się przez poprzedni — od wejścia procesu
 do szablonu, który renderuje odpowiedź.
 
-Trzy dokumenty w `docs/`, żeby się nie pogubić:
+Dokumenty w `docs/`, żeby się nie pogubić:
 
-| plik | odpowiada na pytanie |
-| --- | --- |
-| **ten plik** | jak czytać cały projekt Django, od zera |
+| plik                                                     | odpowiada na pytanie                                                                |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **ten plik**                                             | jak czytać cały projekt Django, od zera                                             |
 | [`przewodnik-po-zmianach.md`](przewodnik-po-zmianach.md) | w jakiej kolejności czytać zmiany z sesji o wyszukiwaniu i jak je pociąć na commity |
-| [`search.md`](search.md) | dlaczego wyszukiwanie jest zrobione tak, a nie inaczej (pomiary, decyzje) |
+| [`search.md`](search.md)                                 | dlaczego wyszukiwanie jest zrobione tak, a nie inaczej (pomiary, decyzje)           |
+| [`nowa-aplikacja.md`](nowa-aplikacja.md)                 | jak założyć nową aplikację i po co jest `app_template/`                             |
 
 Ten plik zaczyna się od zera i nie zakłada znajomości Django.
 
-* [Mapa: gdzie co leży](#mapa-gdzie-co-lezy)
-* [Etap 0 — jak w ogóle uruchomić](#etap-0)
-* [Etap 1 — ścieżka żądania](#etap-1)
-* [Etap 2 — warstwa danych](#etap-2)
-* [Etap 3 — widoki](#etap-3)
-* [Etap 4 — szablony](#etap-4)
-* [Etap 5 — formularze i POST](#etap-5)
-* [Etap 6 — poza HTML](#etap-6)
-* [Etap 7 — wyszukiwanie](#etap-7)
-* [Etap 8 — testy](#etap-8)
-* [Co zauważysz po drodze](#co-zauwazysz)
-* [Ćwiczenia sprawdzające](#cwiczenia)
+- [Mapa: gdzie co leży](#mapa-gdzie-co-lezy)
+- [Etap 0 — jak w ogóle uruchomić](#etap-0)
+- [Etap 1 — ścieżka żądania](#etap-1)
+- [Etap 2 — warstwa danych](#etap-2)
+- [Etap 3 — widoki](#etap-3)
+- [Etap 4 — szablony](#etap-4)
+- [Etap 5 — formularze i POST](#etap-5)
+- [Etap 6 — poza HTML](#etap-6)
+- [Etap 7 — wyszukiwanie](#etap-7)
+- [Etap 8 — testy](#etap-8)
+- [Co zauważysz po drodze](#co-zauwazysz)
+- [Ćwiczenia sprawdzające](#cwiczenia)
 
 ---
 
 <a id="mapa-gdzie-co-lezy"></a>
+
 ## Mapa: gdzie co leży
 
 Katalog projektu Django nazywa się tak samo jak repozytorium, ale dzieli je
@@ -83,6 +85,7 @@ jedna.
 ---
 
 <a id="etap-0"></a>
+
 ## Etap 0 — jak w ogóle uruchomić
 
 Zacznij od tego, bo każdy kolejny etap warto móc od razu sprawdzić w
@@ -92,13 +95,13 @@ przeglądarce.
 
 Trzy usługi, z czego dwie to warianty tej samej:
 
-| usługa | rola |
-| --- | --- |
-| `db` | PostgreSQL 16.2 z polskim słownikiem (build z `./postgres`) |
-| `web_migrate` | `<<: *web` + `manage.py migrate`, czeka na `db` healthy |
-| `web_run` | `<<: *web` + `runserver 0.0.0.0:8000`, czeka na `web_migrate` |
+| usługa        | rola                                                          |
+| ------------- | ------------------------------------------------------------- |
+| `db`          | PostgreSQL 16.2 z polskim słownikiem (build z `./postgres`)   |
+| `web_migrate` | `<<: *web` + `manage.py migrate`, czeka na `db` healthy       |
+| `web_run`     | `<<: *web` + `runserver 0.0.0.0:8000`, czeka na `web_migrate` |
 
-Wspólną część obu — obraz, `working_dir`, wolumen `.:/code`, zmienne
+Wspólną część obu — obraz, `working_dir`, wolumen `.:/app`, zmienne
 środowiskowe, sieć — trzyma jeden blok `x-web: &web` **nad** `services:`.
 To nie usługa, tylko fragment do ponownego użycia: compose ignoruje klucze
 najwyższego poziomu zaczynające się od `x-`, a `<<: *web` w każdej z usług
@@ -143,16 +146,17 @@ w `per-file-ignores` wyciszone są w nich tylko `E501` i `I001` (projektowo,
 dla całego repo, wyciszony jest jeszcze `RUF012` — więc obowiązuje i tutaj).
 
 Dwie rzeczy warte odnotowania w `docker-compose.yml`: `target: dev` wybiera
-etap obrazu z narzędziami deweloperskimi, a wolumen `.:/code` montuje repo do
+etap obrazu z narzędziami deweloperskimi, a wolumen `.:/app` montuje repo do
 kontenera — dlatego `runserver` przeładowuje się po każdej edycji pliku i nie
 musisz przebudowywać obrazu, żeby zobaczyć zmianę w kodzie. Pakiety
 `sylwanspot` i `blog` są importowalne bez ręcznego ustawiania ścieżek importu,
 bo `uv sync` instaluje projekt edytowalnie ze `src/`. Samo środowisko leży w
-`/opt/venv`, **poza** `/code` — inaczej bind mount by je przykrył.
+`/opt/venv`, **poza** `/app` — inaczej bind mount by je przykrył.
 
 ---
 
 <a id="etap-1"></a>
+
 ## Etap 1 — ścieżka żądania
 
 Ta sekwencja jest sercem Django. Przeczytaj cztery pliki po kolei i będziesz
@@ -170,17 +174,17 @@ przechodzi tędy.
 Konfiguracja całego projektu. Przy pierwszym czytaniu skup się na czterech
 miejscach, resztę pomiń:
 
-* **`INSTALLED_APPS`** — co jest włączone. Zwróć uwagę na
+- **`INSTALLED_APPS`** — co jest włączone. Zwróć uwagę na
   `django.contrib.postgres` (potrzebne dla `SearchVectorField` i `GinIndex`),
   `taggit` (biblioteka zewnętrzna do tagów) oraz `blog.apps.BlogConfig` —
-  wskazanie *konkretnej klasy konfiguracyjnej*, nie samej nazwy aplikacji. To
+  wskazanie _konkretnej klasy konfiguracyjnej_, nie samej nazwy aplikacji. To
   ma znaczenie w etapie 2.
-* **`TEMPLATES`** → `"APP_DIRS": True` — dlatego szablony leżą w
+- **`TEMPLATES`** → `"APP_DIRS": True` — dlatego szablony leżą w
   `blog/templates/`, a nie w katalogu globalnym.
-* **`DATABASES`** — `django.db.backends.postgresql`, wartości przez
+- **`DATABASES`** — `django.db.backends.postgresql`, wartości przez
   `python-decouple` (`config("POSTGRES_DB")`), czyli ze zmiennych środowiskowych
   ustawionych w `docker-compose.yml`.
-* **`MIDDLEWARE`** — lista przetwarzająca *każde* żądanie po kolei. Tu żyje
+- **`MIDDLEWARE`** — lista przetwarzająca _każde_ żądanie po kolei. Tu żyje
   ochrona CSRF, sesje i uwierzytelnianie.
 
 ### 1.3 `src/sylwanspot/urls.py` — root URLconf
@@ -207,7 +211,7 @@ na widok, do którego przejdziesz w etapie 3:
 "search/"                                   -> post_search
 ```
 
-`<int:...>` i `<slug:...>` to *konwertery ścieżki* — Django waliduje typ i
+`<int:...>` i `<slug:...>` to _konwertery ścieżki_ — Django waliduje typ i
 przekazuje go do widoku jako argument nazwany. Zauważ, że `post_detail` bierze
 aż cztery segmenty: data plus slug. Dlaczego, wyjaśni się w etapie 2 przy
 `unique_for_date`.
@@ -219,6 +223,7 @@ aż cztery segmenty: data plus slug. Dlaczego, wyjaśni się w etapie 2 przy
 ---
 
 <a id="etap-2"></a>
+
 ## Etap 2 — warstwa danych
 
 ### 2.1 `blog/models.py`
@@ -228,18 +233,18 @@ Najważniejszy plik w projekcie. Dwa modele i jeden manager.
 **`Post`** — przeczytaj pole po polu, a potem zatrzymaj się na czterech
 rzeczach:
 
-* **`class Status(models.TextChoices)`** — enum wewnątrz modelu. Django tworzy
+- **`class Status(models.TextChoices)`** — enum wewnątrz modelu. Django tworzy
   z tego `choices` dla pola i daje dostęp przez `Post.Status.PUBLISHED`.
   W bazie siedzi dwuznakowe `"DF"` / `"PB"`.
-* **`slug = models.SlugField(unique_for_date="publish")`** — unikalność slugu
-  *w obrębie dnia publikacji*, nie globalnie. To dlatego URL ma w sobie datę:
+- **`slug = models.SlugField(unique_for_date="publish")`** — unikalność slugu
+  _w obrębie dnia publikacji_, nie globalnie. To dlatego URL ma w sobie datę:
   dwa posty mogą mieć slug `nowy-post`, jeśli opublikowano je innego dnia.
-* **`author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="blog_posts")`**
+- **`author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="blog_posts")`**
   — relacja do wbudowanego modelu użytkownika. `related_name` tworzy odwrotną
   relację: `user.blog_posts.all()`.
-* **`tags = TaggableManager()`** — z biblioteki django-taggit. Nie jest to
+- **`tags = TaggableManager()`** — z biblioteki django-taggit. Nie jest to
   zwykłe `ManyToManyField`: tagi trzymane są w tabelach `taggit_tag` i
-  `taggit_taggeditem` przez *generic foreign key*, czyli jedna tabela obsługuje
+  `taggit_taggeditem` przez _generic foreign key_, czyli jedna tabela obsługuje
   tagi dla dowolnego modelu. To komplikacja, która wraca w etapie 7.
 
 **`PublishedManager`** — własny manager nadpisujący `get_queryset()`, żeby
@@ -270,20 +275,20 @@ nie muszą znać struktury adresów.
 Historia schematu bazy, plik po pliku. Przeczytaj tylko nazwy i po jednej
 operacji z każdego — nie ma potrzeby czytać ich w całości:
 
-| migracja | co robi |
-| --- | --- |
-| `0001_initial` | tworzy `Post` |
-| `0002_alter_post_slug` | dodaje `unique_for_date` |
-| `0003_comment` | tworzy `Comment` |
-| `0004_post_tags` | podłącza taggit |
-| `0005_polish_fts` | polska konfiguracja FTS + `pg_trgm` |
+| migracja                  | co robi                                         |
+| ------------------------- | ----------------------------------------------- |
+| `0001_initial`            | tworzy `Post`                                   |
+| `0002_alter_post_slug`    | dodaje `unique_for_date`                        |
+| `0003_comment`            | tworzy `Comment`                                |
+| `0004_post_tags`          | podłącza taggit                                 |
+| `0005_polish_fts`         | polska konfiguracja FTS + `pg_trgm`             |
 | `0006_post_search_vector` | kolumna `search_vector` + indeks GIN + backfill |
 
-Model to *deklaracja stanu docelowego*; migracje to *kroki dojścia*. Django
+Model to _deklaracja stanu docelowego_; migracje to _kroki dojścia_. Django
 generuje je z różnicy między modelem a ostatnią migracją:
 
 ```bash
-docker compose exec web_run python /code/manage.py makemigrations blog --check --dry-run
+docker compose exec web_run python /app/manage.py makemigrations blog --check --dry-run
 # "No changes detected" = model i migracje są spójne
 ```
 
@@ -298,7 +303,7 @@ klasa `ModelAdmin` z deklaracjami — `list_display`, `list_filter`,
 (pole autora jako ID, nie rozwijana lista z wszystkimi userami).
 
 ```bash
-docker compose exec web_run python /code/manage.py createsuperuser
+docker compose exec web_run python /app/manage.py createsuperuser
 # potem http://localhost:8000/admin/
 ```
 
@@ -308,6 +313,7 @@ testować kolejne etapy.
 ---
 
 <a id="etap-3"></a>
+
 ## Etap 3 — widoki
 
 `blog/views.py`. Pięć widoków — cztery funkcyjne i jeden klasowy — i to
@@ -346,9 +352,9 @@ zacznie iterować.
 Ten sam problem, inne podejście. `ListView` dostarcza gotowo paginację i
 pobranie listy; ty nadpisujesz tylko punkty zaczepienia:
 
-* `get_queryset()` — dodaje filtrowanie po tagu, jeśli w URL był `tag_slug`
-* `get_context_data()` — wkłada `tag` do kontekstu szablonu
-* `paginate_by = 3` — z tego bierze się `page_obj` w szablonie
+- `get_queryset()` — dodaje filtrowanie po tagu, jeśli w URL był `tag_slug`
+- `get_context_data()` — wkłada `tag` do kontekstu szablonu
+- `paginate_by = 3` — z tego bierze się `page_obj` w szablonie
 
 Porównaj to z zakomentowaną funkcją `post_list` **bezpośrednio nad klasą** —
 została w pliku celowo albo przez zapomnienie, ale jako materiał do nauki jest
@@ -367,6 +373,7 @@ najlepsza ilustracja, co widok klasowy właściwie dla ciebie robi.
 ---
 
 <a id="etap-4"></a>
+
 ## Etap 4 — szablony
 
 `blog/templates/`. Czytaj w tej kolejności, bo dziedziczenie idzie od
@@ -392,13 +399,13 @@ zapytania lecą przy **każdym** renderowaniu strony.
 
 Cztery rzeczy, trzy różne rodzaje rejestracji — dobry przekrój możliwości:
 
-| nazwa | typ | zwraca |
-| --- | --- | --- |
-| `total_posts` | `simple_tag` | liczbę |
-| `show_latest_posts` | `inclusion_tag` | wyrenderowany podszablon `latest_posts.html` |
-| `get_most_commented_posts` | `simple_tag` | QuerySet (używany z `as ...`) |
-| `markdown` | `filter` | HTML z markdowna, przez `mark_safe` |
-| `pluralize_pl` | `filter` | poprawną polską formę liczby mnogiej |
+| nazwa                      | typ             | zwraca                                       |
+| -------------------------- | --------------- | -------------------------------------------- |
+| `total_posts`              | `simple_tag`    | liczbę                                       |
+| `show_latest_posts`        | `inclusion_tag` | wyrenderowany podszablon `latest_posts.html` |
+| `get_most_commented_posts` | `simple_tag`    | QuerySet (używany z `as ...`)                |
+| `markdown`                 | `filter`        | HTML z markdowna, przez `mark_safe`          |
+| `pluralize_pl`             | `filter`        | poprawną polską formę liczby mnogiej         |
 
 Dwie rzeczy do zauważenia. Po pierwsze, plik musi leżeć w katalogu
 `templatetags/` z `__init__.py` — inaczej `{% load blog_tags %}` nie zadziała.
@@ -408,13 +415,13 @@ zaufani autorzy przez admina.
 
 ### 4.3 Szablony konkretne
 
-* `blog/post/list.html` — `{% extends %}`, pętla po `posts`, linki do tagów
+- `blog/post/list.html` — `{% extends %}`, pętla po `posts`, linki do tagów
   przez `{% url "blog:post_list_by_tag" tag.slug %}`, na końcu
   `{% include "pagination.html" with page=page_obj %}`
-* `pagination.html` — reużywalny fragment, dostaje `page` jako parametr
-* `blog/post/detail.html` — post, podobne posty, licznik komentarzy
+- `pagination.html` — reużywalny fragment, dostaje `page` jako parametr
+- `blog/post/detail.html` — post, podobne posty, licznik komentarzy
   (`pluralize_pl`), lista komentarzy, `{% include %}` formularza
-* `blog/post/includes/comment_form.html` — sam formularz; konwencja `includes/`
+- `blog/post/includes/comment_form.html` — sam formularz; konwencja `includes/`
   dla fragmentów nierenderowanych samodzielnie
 
 Zwróć uwagę na `{% empty %}` w pętlach `{% for %}` — to gałąź dla pustej
@@ -423,18 +430,19 @@ kolekcji, czystsza niż osobne `{% if %}`.
 ---
 
 <a id="etap-5"></a>
+
 ## Etap 5 — formularze i POST
 
 ### 5.1 `blog/forms.py`
 
 Trzy formularze, dwa różne rodzaje bazowe:
 
-* **`EmailPostForm(forms.Form)`** — formularz *niezwiązany* z modelem. Pola
+- **`EmailPostForm(forms.Form)`** — formularz _niezwiązany_ z modelem. Pola
   deklarujesz ręcznie, dane nigdzie nie są zapisywane, tylko wysyłane mailem.
-* **`CommentForm(forms.ModelForm)`** — formularz *z modelu*. `Meta.model` i
+- **`CommentForm(forms.ModelForm)`** — formularz _z modelu_. `Meta.model` i
   `Meta.fields` wystarczają, żeby Django wygenerował pola, walidację i metodę
   `save()`.
-* **`SearchForm(forms.Form)`** — jedno pole, etap 7.
+- **`SearchForm(forms.Form)`** — jedno pole, etap 7.
 
 ### 5.2 `post_share` — wzorzec GET/POST w jednym widoku
 
@@ -479,11 +487,12 @@ walidacji zamiast strony 500.
 ---
 
 <a id="etap-6"></a>
+
 ## Etap 6 — poza HTML
 
 Dwa krótkie pliki pokazujące, że widok nie musi zwracać strony.
 
-* **`blog/feeds.py`** — `LatestPostsFeed(Feed)` z `django.contrib.syndication`.
+- **`blog/feeds.py`** — `LatestPostsFeed(Feed)` z `django.contrib.syndication`.
   Metody `items()`, `item_title()`, `item_description()`, `item_pubdate()`
   wystarczają, żeby Django wygenerował RSS. Podłączony w `blog/urls.py` jako
   `LatestPostsFeed()` — instancja, nie klasa. Sprawdź:
@@ -492,7 +501,8 @@ Dwa krótkie pliki pokazujące, że widok nie musi zwracać strony.
   W wygenerowanym XML zobaczysz `<language>en-us</language>` przy polskiej
   treści — to najbardziej dotykalny skutek `LANGUAGE_CODE = "en-us"`
   z etapu 1.2 i dobry punkt wyjścia, jeśli kiedyś zabierzesz się za lokalizację.
-* **`blog/sitemaps.py`** — `PostSitemap(Sitemap)` z `items()` i `lastmod()`.
+
+- **`blog/sitemaps.py`** — `PostSitemap(Sitemap)` z `items()` i `lastmod()`.
   Podłączony w **root** URLconf, nie w aplikacji, bo `sitemap.xml` musi być w
   korzeniu domeny. Wymaga `django.contrib.sites` i `SITE_ID = 1`
   w `settings.py`. Sprawdź: `curl -s localhost:8000/sitemap.xml`
@@ -503,6 +513,7 @@ sitemapy. To ta sama jedna linia w managerze chroni trzy różne wyjścia.
 ---
 
 <a id="etap-7"></a>
+
 ## Etap 7 — wyszukiwanie
 
 Ostatnie, bo dotyka wszystkich poprzednich warstw naraz i jest jedynym
@@ -512,20 +523,20 @@ specyficznych możliwości PostgreSQL.
 Kolejność czytania: `search.py` → `signals.py` → `apps.py` → `views.post_search`
 → `templates/blog/post/search.html` → `management/commands/rebuild_search_vectors.py`.
 
-Trzy rzeczy warte zauważenia z perspektywy *frameworka*, niezależnie od samego
+Trzy rzeczy warte zauważenia z perspektywy _frameworka_, niezależnie od samego
 FTS:
 
 1. **`apps.py` + `signals.py` — sygnały.** `BlogConfig.ready()` importuje
-  `signals`, co rejestruje odbiorniki. To jedyne poprawne miejsce na taki
-  import — w momencie `ready()` rejestr modeli jest już gotowy. Teraz wracasz
-  do etapu 1 i rozumiesz, dlaczego `INSTALLED_APPS` wskazuje
-  `blog.apps.BlogConfig`, a nie samo `"blog"`.
+   `signals`, co rejestruje odbiorniki. To jedyne poprawne miejsce na taki
+   import — w momencie `ready()` rejestr modeli jest już gotowy. Teraz wracasz
+   do etapu 1 i rozumiesz, dlaczego `INSTALLED_APPS` wskazuje
+   `blog.apps.BlogConfig`, a nie samo `"blog"`.
 2. **`management/commands/` — własna komenda.** Klasa `Command(BaseCommand)`
-  z metodą `handle()` w pliku o tej nazwie i Django samo dodaje
-  `manage.py rebuild_search_vectors`. Wymaga `__init__.py` w `management/`
-  i `management/commands/`.
+   z metodą `handle()` w pliku o tej nazwie i Django samo dodaje
+   `manage.py rebuild_search_vectors`. Wymaga `__init__.py` w `management/`
+   i `management/commands/`.
 3. **`search.py` — logika poza widokiem.** Widok ma 20 linii i deleguje.
-  To dlatego wyszukiwanie da się przetestować bez klienta HTTP.
+   To dlatego wyszukiwanie da się przetestować bez klienta HTTP.
 
 Uzasadnienia decyzji, pomiary i znane ograniczenia:
 [`docs/search.md`](search.md). Infrastruktura bazy:
@@ -534,6 +545,7 @@ Uzasadnienia decyzji, pomiary i znane ograniczenia:
 ---
 
 <a id="etap-8"></a>
+
 ## Etap 8 — testy
 
 **Czytaj:** `pyproject.toml` (sekcja `[tool.pytest.ini_options]`) →
@@ -589,21 +601,21 @@ błąd, bo wygląda jak sukces.
 Jeden plik na moduł źródłowy — dzięki temu odpowiedź na pytanie „gdzie dopisać
 test do `search.py`" jest mechaniczna, a nie uznaniowa.
 
-| plik | co pokrywa |
-| --- | --- |
-| `test_postgres_setup.py` | konfiguracja `polish`, hunspell, stop-słowa, `pg_trgm` |
-| `test_search.py` | `search_posts()` — co znajduje, w jakiej kolejności, ile zapytań kosztuje |
-| `test_search_indexing.py` | `signals.py` + `rebuild_search_vectors` — co ląduje w `search_vector` |
-| `test_views.py` | wyrenderowany HTML: widok wyszukiwania i licznik komentarzy |
-| `test_templatetags.py` | `pluralize_pl` — czysta funkcja, bez bazy |
+| plik                      | co pokrywa                                                                |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `test_postgres_setup.py`  | konfiguracja `polish`, hunspell, stop-słowa, `pg_trgm`                    |
+| `test_search.py`          | `search_posts()` — co znajduje, w jakiej kolejności, ile zapytań kosztuje |
+| `test_search_indexing.py` | `signals.py` + `rebuild_search_vectors` — co ląduje w `search_vector`     |
+| `test_views.py`           | wyrenderowany HTML: widok wyszukiwania i licznik komentarzy               |
+| `test_templatetags.py`    | `pluralize_pl` — czysta funkcja, bez bazy                                 |
 
 Dwa pliki pomocnicze:
 
-* **`conftest.py`** — fixture'y współdzielone: `author` i fabryka `make_post`.
+- **`conftest.py`** — fixture'y współdzielone: `author` i fabryka `make_post`.
   Pytest wstrzykuje je po nazwie argumentu, bez importu. Trafia tu wyłącznie
   to, czego używa więcej niż jeden moduł; pomocnik jednego modułu zostaje
   w tym module (patrz `vector_of` w `test_search_indexing.py`).
-* **`assertions.py`** — pytest-django nie eksportuje asercji Django, a
+- **`assertions.py`** — pytest-django nie eksportuje asercji Django, a
   `assertContains(..., html=True)` porównuje HTML semantycznie, nie bajt po
   bajcie. Cztery linie, które podpinają je jako zwykłe funkcje.
 
@@ -623,6 +635,7 @@ tematyczna. Najbliższy kandydat to `test_views.py`: przy testach `post_share`
 ---
 
 <a id="co-zauwazysz"></a>
+
 ## Co zauważysz po drodze
 
 Rzeczy, które wyglądają na błąd albo niedokończenie — żeby nie zastanawiać się,
@@ -630,28 +643,29 @@ czy czegoś nie rozumiesz.
 
 **Realne problemy, nienaprawione:**
 
-* `post_comment` zwraca `None` przy niepoprawnym formularzu → HTTP 500.
+- `post_comment` zwraca `None` przy niepoprawnym formularzu → HTTP 500.
   Opisane w etapie 5.
-* `SECRET_KEY` jest w `settings.py` na sztywno, `DEBUG = True`,
+- `SECRET_KEY` jest w `settings.py` na sztywno, `DEBUG = True`,
   `ALLOWED_HOSTS = []`. Poprawne dla dev, blokujące dla produkcji.
-* Hasło do SMTP jest wpisane w `docker-compose.yml` jako placeholder z iksów.
+- Hasło do SMTP jest wpisane w `docker-compose.yml` jako placeholder z iksów.
   Zanim wstawisz tam prawdziwe, przenieś je do pliku `.env` (ten plik już
   raz z repo usunięto — patrz `git log`).
 
 **Świadome lub nieszkodliwe:**
 
-* `LANGUAGE_CODE = "en-us"` i `TIME_ZONE = "UTC"` przy polskiej treści. To nie
+- `LANGUAGE_CODE = "en-us"` i `TIME_ZONE = "UTC"` przy polskiej treści. To nie
   przypadek, że ma to znaczenie — z tego wynika, dlaczego liczba mnoga wymaga
   własnego filtru, a nie `ngettext` (etap 4.2).
-* Zakomentowana funkcja `post_list` w `views.py` — zostawiona, świetna do nauki
+- Zakomentowana funkcja `post_list` w `views.py` — zostawiona, świetna do nauki
   (etap 3.2).
-* Klasa `Postadmin` (małe „a") obok `CommentAdmin`. Kosmetyka.
-* Brak `CLAUDE.md`. Jeśli będziesz często wracał do tego repo z Claude Code,
+- Klasa `Postadmin` (małe „a") obok `CommentAdmin`. Kosmetyka.
+- Brak `CLAUDE.md`. Jeśli będziesz często wracał do tego repo z Claude Code,
   warto go dodać przez `/init`.
 
 ---
 
 <a id="cwiczenia"></a>
+
 ## Ćwiczenia sprawdzające
 
 Jeśli umiesz odpowiedzieć bez zaglądania, przeczytałeś ze zrozumieniem.

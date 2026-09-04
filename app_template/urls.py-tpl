@@ -1,0 +1,7 @@
+from django.urls import URLPattern, URLResolver
+
+app_name = "{{ app_name }}"
+
+# The annotation is required: with `check_untyped_defs` mypy cannot infer the
+# type of an empty list and reports "Need type annotation for urlpatterns".
+urlpatterns: list[URLPattern | URLResolver] = []

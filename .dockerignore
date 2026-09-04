@@ -15,4 +15,5 @@
 **/.mypy_cache/
 **/.ruff_cache/
 docs/
+app_template/
 *.sqlite3

@@ -80,7 +80,7 @@ test() {
 }
 
 exec() {
-    $DOCKER_COMPOSE exec -e COLUMNS -e LINES "$@"
+    $DOCKER_COMPOSE exec -u "$(id -u):$(id -g)" -e HOME=/tmp -e COLUMNS -e LINES "$@"
 }
 
 _usage() {
